@@ -11,6 +11,8 @@ class Map:
         self.brightness_list = []
         self.elevation_grid = []
         self.image = Image.new('RGBA', (600, 600), (0, 0, 0, 255))
+        self.best_elev_delta = 10000000000000
+        self.best_y = 0
 
     
     def get_elevation_data(self, data):    
@@ -34,21 +36,52 @@ class Map:
             self.elevation_grid.append(current_elevation_row)
         # print(self.brightness_list)
         # print(self.elevation_grid)
+           
+    def get_next_y(self, x, y_coord):
+        current_position = self.elevation_grid[x][y_coord]
+        if x >= 599:
+            return -1
+        else: 
+            right = abs((self.elevation_grid[y_coord][x+1]) - current_position)
+
+        if y_coord == 0:
+            up_right = 10000000000000
+        else:
+            up_right = abs((self.elevation_grid[y_coord-1][x+1]) - current_position)
+
+        if y_coord == 599:
+            down_right = 1000000000000 
+        else:   
+            down_right = abs((self.elevation_grid[y_coord+1][x+1]) - current_position)
+
+        min_val = min(right, up_right, down_right)
 
         
+        if min_val == right:
+            return y_coord
+        elif min_val == down_right:
+            return y_coord + 1
+        elif min_val == up_right:
+            return y_coord - 1
 
-        # for elevation in data:
-        #     pixel_color = self.get_brightness(elevation)
-        #     self.brightness_list.append(pixel_color)
-           
         
     def find_path(self, y_coord):
-        # right = 
-        # up_right = 
-        # down_right = 
-        for x in range (600):
-            self.image.putpixel((x, 300), ImageColor.getcolor('blue', 'RGBA'))
-        
+        cur_elev_delta = 0
+        cur_y = y_coord
+        for x in range (600):   
+            self.image.putpixel((x, y_coord), ImageColor.getcolor('blue', 'RGBA'))
+            y = y_coord
+            y_coord = self.get_next_y(x, y_coord)
+            # Do something with cur_elev..
+            if x < 599:
+                cur_elev_delta += abs(self.elevation_grid[x][y] - self.elevation_grid[x+1][y_coord])
+
+        # compare self.best_elev_delta and cur_elev_delta
+        if cur_elev_delta < self.best_elev_delta:
+            self.best_elev_delta = cur_elev_delta
+            self.best_y = cur_y
+        print(self.best_y)
+        print(self.best_elev_delta)
 
     def draw_map(self):
         # Converts self.brightness_list to picture
@@ -58,7 +91,6 @@ class Map:
             for y in range(600):
                 self.image.putpixel((y, x), (self.brightness_list[x][y]))
                 # self.find_path(300)
-
 
     def save_map(self):
         self.image.save('new_map.png')
@@ -70,22 +102,9 @@ class Map:
         return (color, color, color, 255)
    
 
-class Path:
-    def __init__(self, elevation, map):
-        self.map = map1
-        self.elevation = elevation
-
-    
-
-
-
-
 with open ("elevation_small.txt") as file:
     data = file.read().split()
     data = [int(i) for i in data]
-
-
-
 
 our_data = data
 
@@ -95,7 +114,13 @@ map1 = Map(our_data)
 
 map1.draw_map()
 
-map1.find_path(300)
+for y_coord in range(600):
+    map1.find_path(y_coord)
+
+y_coord = map1.best_y
+for x in range (600):   
+    map1.image.putpixel((x, y_coord), ImageColor.getcolor('red', 'RGBA'))
+    y_coord = map1.get_next_y(x, y_coord)
 
 map1.save_map()
 
